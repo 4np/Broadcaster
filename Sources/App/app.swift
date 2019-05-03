@@ -28,9 +28,11 @@ public func app(_ env: Environment) throws -> Application {
         
         guard !instances.isEmpty else { return }
 
+        #if os(macOS)
         if #available(OSX 10.12, *) {
             os_log("Delete %d expired instance(s).", log: .default, type: .debug, instances.count)
         }
+        #endif
         
         // Delete expired instances
         for instance in instances {

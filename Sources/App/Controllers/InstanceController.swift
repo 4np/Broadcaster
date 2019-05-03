@@ -23,17 +23,21 @@ struct InstanceController: RouteCollection {
     }
     
     func getAllHandler(_ req: Request) throws -> Future<[Instance]> {
+        #if os(macOS)
         if #available(OSX 10.12, *) {
             os_log("GET %@", log: .default, type: .debug, req.http.urlString)
         }
+        #endif
         
         return Instance.query(on: req).all()
     }
     
     func createHandler(_ req: Request) throws -> Future<Instance> {
+        #if os(macOS)
         if #available(OSX 10.12, *) {
             os_log("POST %@", log: .default, type: .debug, req.description)
         }
+        #endif
         
         return try req.content.decode(Instance.self).flatMap(to: Instance.self) { (instance) in
             return instance.save(on: req)
@@ -41,9 +45,11 @@ struct InstanceController: RouteCollection {
     }
     
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        #if os(macOS)
         if #available(OSX 10.12, *) {
             os_log("DELETE %@", log: .default, type: .debug, req.http.urlString)
         }
+        #endif
         
         return try req.parameters.next(Instance.self)
             .delete(on: req)
@@ -51,9 +57,11 @@ struct InstanceController: RouteCollection {
     }
     
     func keepaliveHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        #if os(macOS)
         if #available(OSX 10.12, *) {
             os_log("GET %@", log: .default, type: .debug, req.http.urlString)
         }
+        #endif
         
         guard let searchTerm = req.query[String.self, at: "uuid"] else {
             throw Abort(.badRequest)
