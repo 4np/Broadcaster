@@ -7,7 +7,10 @@
 
 import Vapor
 import Fluent
-import os.log
+
+#if os(macOS)
+    import os.log
+#endif
 
 struct InstanceController: RouteCollection {
     func boot(router: Router) throws {
