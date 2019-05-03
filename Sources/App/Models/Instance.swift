@@ -25,6 +25,9 @@ final class Instance: Codable {
     /// The user name of the user running the instance.
     var userName: String
     
+    var createdAt: Date?
+    var updatedAt: Date?
+    
     init(version: String, uuid: String, track: String, ip: String, port: Int, fullName: String, userName: String) {
         self.version = version
         self.uuid = uuid
@@ -36,7 +39,10 @@ final class Instance: Codable {
     }
 }
 
-extension Instance: SQLiteUUIDModel { }
+extension Instance: SQLiteUUIDModel {
+    static var createdAtKey: TimestampKey? = \.createdAt
+    static var updatedAtKey: TimestampKey? = \.updatedAt
+}
 
 extension Instance: Migration {
     static func prepare(on connection: SQLiteConnection) -> Future<Void> {
