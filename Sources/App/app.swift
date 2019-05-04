@@ -37,7 +37,9 @@ public func app(_ env: Environment) throws -> Application {
     Jobs.add(interval: .seconds(jobInterval)) {
         guard let connection = jobConnection, let logger = try? app.make(Logger.self) else { return }
         
+        #if DEBUG
         logger.debug("Running cleanup job")
+        #endif
 
         // Delete expired instances that have not been kept alive.
         let expiry = Date().addingTimeInterval(-instanceLifetime)
