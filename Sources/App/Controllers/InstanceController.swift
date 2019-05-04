@@ -19,14 +19,14 @@ struct InstanceController: RouteCollection {
     }
     
     func getAllHandler(_ req: Request) throws -> Future<[Instance]> {
-        let logger = try req.make(Logger.self)
+        let logger = try req.make(CustomLogger.self)
         logger.debug("GET \(req.http.urlString)")
         
         return Instance.query(on: req).all()
     }
     
     func createHandler(_ req: Request) throws -> Future<Instance> {
-        let logger = try req.make(Logger.self)
+        let logger = try req.make(CustomLogger.self)
         logger.debug("POST \(req.http.urlString)")
         
         return try req.content.decode(Instance.self).flatMap(to: Instance.self) { (instance) in
@@ -36,7 +36,7 @@ struct InstanceController: RouteCollection {
     }
     
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        let logger = try req.make(Logger.self)
+        let logger = try req.make(CustomLogger.self)
         logger.debug("DELETE \(req.http.urlString)")
         
         return try req.parameters.next(Instance.self)
@@ -49,7 +49,7 @@ struct InstanceController: RouteCollection {
     }
     
     func keepaliveHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        let logger = try req.make(Logger.self)
+        let logger = try req.make(CustomLogger.self)
         logger.debug("GET \(req.http.urlString)")
         
         guard let searchTerm = req.query[String.self, at: "uuid"] else {

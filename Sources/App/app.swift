@@ -28,14 +28,14 @@ public func app(_ env: Environment) throws -> Application {
         jobInterval = value
     }
     
-    if let logger = try? app.make(Logger.self) {
+    if let logger = try? app.make(CustomLogger.self) {
         logger.info("Instance lifetime: \(instanceLifetime) seconds")
         logger.info("Cleanup job interval: \(jobInterval) seconds")
     }
     
     // Schedule a cleanup job that runs every minute
     Jobs.add(interval: .seconds(jobInterval)) {
-        guard let connection = jobConnection, let logger = try? app.make(Logger.self) else { return }
+        guard let connection = jobConnection, let logger = try? app.make(CustomLogger.self) else { return }
         
         logger.debug("Running cleanup job")
 
