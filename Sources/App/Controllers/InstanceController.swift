@@ -8,10 +8,6 @@
 import Vapor
 import Fluent
 
-#if os(macOS)
-    import os.log
-#endif
-
 struct InstanceController: RouteCollection {
     func boot(router: Router) throws {
         // public routes
@@ -23,45 +19,38 @@ struct InstanceController: RouteCollection {
     }
     
     func getAllHandler(_ req: Request) throws -> Future<[Instance]> {
-        #if os(macOS)
-        if #available(OSX 10.12, *) {
-            os_log("GET %@", log: .default, type: .debug, req.http.urlString)
-        }
-        #endif
+        let logger = try req.make(Logger.self)
+        logger.debug("GET \(req.http.urlString)")
         
         return Instance.query(on: req).all()
     }
     
     func createHandler(_ req: Request) throws -> Future<Instance> {
-        #if os(macOS)
-        if #available(OSX 10.12, *) {
-            os_log("POST %@", log: .default, type: .debug, req.description)
-        }
-        #endif
+        let logger = try req.make(Logger.self)
+        logger.debug("POST \(req.http.urlString)")
         
         return try req.content.decode(Instance.self).flatMap(to: Instance.self) { (instance) in
+            logger.info("Created \(instance.serviceName) instance")
             return instance.save(on: req)
         }
     }
     
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        #if os(macOS)
-        if #available(OSX 10.12, *) {
-            os_log("DELETE %@", log: .default, type: .debug, req.http.urlString)
-        }
-        #endif
+        let logger = try req.make(Logger.self)
+        logger.debug("DELETE \(req.http.urlString)")
         
         return try req.parameters.next(Instance.self)
             .delete(on: req)
+            .map(to: Instance.self) { (instance) in
+                logger.info("Deleted \(instance.serviceName) instance")
+                return instance
+            }
             .transform(to: HTTPStatus.noContent)
     }
     
     func keepaliveHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        #if os(macOS)
-        if #available(OSX 10.12, *) {
-            os_log("GET %@", log: .default, type: .debug, req.http.urlString)
-        }
-        #endif
+        let logger = try req.make(Logger.self)
+        logger.debug("GET \(req.http.urlString)")
         
         guard let searchTerm = req.query[String.self, at: "uuid"] else {
             throw Abort(.badRequest)
@@ -74,6 +63,8 @@ struct InstanceController: RouteCollection {
                 guard let instance = instance else {
                     throw Abort(.notFound)
                 }
+                
+                logger.info("Keeping \(instance.serviceName) instance alive")
                 
                 return instance
             }
