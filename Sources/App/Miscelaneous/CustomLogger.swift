@@ -33,10 +33,12 @@ public class CustomLogger: Logger {
     public func log(_ string: String, at level: LogLevel, file: String, function: String, line: UInt, column: UInt) {
         guard levels.map({ return "\($0)" }).index(of: "\(level)") != nil else { return }
         
+        let now = Date()
+        
         #if DEBUG
-        Swift.print("[\(level)] \(string) (\(file):\(function):\(line):\(column))")
+        Swift.print("[ \(now) - \(level) ] \(string) (\(file):\(function):\(line):\(column))")
         #else
-        Swift.print("[\(level)] \(string)")
+        Swift.print("[ \(now) - \(level) ] \(string)")
         #endif
     }
 }

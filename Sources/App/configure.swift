@@ -7,7 +7,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     // Register providers first
     try services.register(FluentSQLiteProvider())
     
-    services.register(Logger.self) { container -> CustomLogger in
+    services.register(CustomLogger.self) { container -> CustomLogger in
         return CustomLogger()
     }
 
