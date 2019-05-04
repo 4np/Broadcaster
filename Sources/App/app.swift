@@ -47,7 +47,7 @@ public func app(_ env: Environment) throws -> Application {
         
         for instance in instances {
             _ = instance.delete(on: connection)
-            logger.info("Deleted \(instance.serviceName) expired instance")
+            logger.info("Deleted \(instance.serviceName) expired instance (\(instance.location))")
         }
     }
     

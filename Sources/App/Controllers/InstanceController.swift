@@ -36,7 +36,7 @@ struct InstanceController: RouteCollection {
         #endif
         
         return try req.content.decode(Instance.self).flatMap(to: Instance.self) { (instance) in
-            logger.info("Created \(instance.serviceName) instance")
+            logger.info("Created \(instance.serviceName) instance (\(instance.location))")
             return instance.save(on: req)
         }
     }
@@ -51,7 +51,7 @@ struct InstanceController: RouteCollection {
         return try req.parameters.next(Instance.self)
             .delete(on: req)
             .map(to: Instance.self) { (instance) in
-                logger.info("Deleted \(instance.serviceName) instance")
+                logger.info("Deleted \(instance.serviceName) instance (\(instance.location))")
                 return instance
             }
             .transform(to: HTTPStatus.noContent)
@@ -76,7 +76,7 @@ struct InstanceController: RouteCollection {
                     throw Abort(.notFound)
                 }
                 
-                logger.info("Keeping \(instance.serviceName) instance alive")
+                logger.info("Keeping \(instance.serviceName) instance alive (\(instance.location))")
                 
                 return instance
             }

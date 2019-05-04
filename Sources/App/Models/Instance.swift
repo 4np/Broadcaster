@@ -45,7 +45,6 @@ final class Instance: Codable {
         let elements = [user, version, name, "(\(track))"]
         return elements.joined(separator: " ")
     }
-
     
     init(version: String, name: String, uuid: String, track: String, ip: String, port: Int, fullName: String, userName: String, location: String) {
         self.uuid = uuid
