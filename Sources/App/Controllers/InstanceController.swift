@@ -16,6 +16,7 @@ struct InstanceController: RouteCollection {
         instanceRoutes.get(use: getAllHandler)
         instanceRoutes.put(Instance.parameter, "ping", use: pingHandler)
         instanceRoutes.delete(Instance.parameter, use: deleteHandler)
+        instanceRoutes.get("search", use: searchHandler)
     }
     
     func getAllHandler(_ req: Request) throws -> Future<[Instance]> {
@@ -74,5 +75,25 @@ struct InstanceController: RouteCollection {
             }
             .update(on: req)
             .transform(to: HTTPStatus.noContent)
+    }
+    
+    func searchHandler(_ req: Request) throws -> Future<Instance> {
+        let logger = try req.make(Logger.self)
+        
+        #if DEBUG
+        logger.debug("GET \(req.http.urlString)")
+        #endif
+        
+        guard let digest = req.query[String.self, at: "digest"] else {
+            throw Abort(.badRequest)
+        }
+        
+        return Instance.query(on: req).filter(\.digest == digest).first().map(to: Instance.self) { (instance) in
+            guard let instance = instance else {
+                throw Abort(.notFound)
+            }
+
+            return instance
+        }
     }
 }
