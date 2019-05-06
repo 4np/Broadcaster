@@ -92,6 +92,8 @@ struct InstanceController: RouteCollection {
             guard let instance = instance else {
                 throw Abort(.notFound)
             }
+            
+            logger.info("Searched \(instance.serviceName) instance by digest (\(instance.location))")
 
             return instance
         }
