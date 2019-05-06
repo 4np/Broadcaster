@@ -12,9 +12,9 @@ struct InstanceController: RouteCollection {
     func boot(router: Router) throws {
         // public routes
         let instanceRoutes = router.grouped("api", "instances")
-        instanceRoutes.get(use: getAllHandler)
-        instanceRoutes.get("keepalive", use: keepaliveHandler)
         instanceRoutes.post(use: createHandler)
+        instanceRoutes.get(use: getAllHandler)
+        instanceRoutes.put(Instance.parameter, "ping", use: pingHandler)
         instanceRoutes.delete(Instance.parameter, use: deleteHandler)
     }
     
@@ -57,27 +57,18 @@ struct InstanceController: RouteCollection {
             .transform(to: HTTPStatus.noContent)
     }
     
-    func keepaliveHandler(_ req: Request) throws -> Future<HTTPStatus> {
+    /// The ping request will update the instance's `updatedAt` date to keep it alive.
+    func pingHandler(_ req: Request) throws -> Future<HTTPStatus> {
         let logger = try req.make(Logger.self)
         
         #if DEBUG
         logger.debug("GET \(req.http.urlString)")
         #endif
         
-        guard let searchTerm = req.query[String.self, at: "uuid"] else {
-            throw Abort(.badRequest)
-        }
-        
-        return Instance
-            .query(on: req)
-            .filter(\.uuid == searchTerm).first()
+        return try req
+            .parameters.next(Instance.self)
             .map(to: Instance.self) { (instance) in
-                guard let instance = instance else {
-                    throw Abort(.notFound)
-                }
-                
                 logger.info("Keeping \(instance.serviceName) instance alive (\(instance.location))")
-                
                 return instance
             }
             .update(on: req)
