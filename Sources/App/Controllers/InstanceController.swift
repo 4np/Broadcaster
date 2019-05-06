@@ -37,6 +37,7 @@ struct InstanceController: RouteCollection {
         
         return try req.content.decode(Instance.self).flatMap(to: Instance.self) { (instance) in
             logger.info("Created \(instance.serviceName) instance (\(instance.location))")
+            instance.updateDigest()
             return instance.save(on: req)
         }
     }
