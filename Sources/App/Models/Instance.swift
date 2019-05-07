@@ -82,7 +82,10 @@ extension Instance {
     func updateDigest() {
         guard digest == nil else { return }
         
-        if let digest = try? SHA1.hash(name + version + track + ip + String(port) + fullName + userName + location) {
+        // Calculate a SHA1 hash for all things that make this instance unique, while
+        // ignoring:    - ip (as this is prone to change)
+        //              - full name (as user name is better suited)
+        if let digest = try? SHA1.hash(name + version + track + String(port) + userName + location) {
             self.digest = digest.hexEncodedString()
         }
     }
