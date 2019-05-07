@@ -8,7 +8,6 @@
 import Vapor
 import Fluent
 import Crypto
-import os.log
 
 struct UsersController: RouteCollection {
     func boot(router: Router) throws {
