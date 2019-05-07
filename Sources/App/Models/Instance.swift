@@ -9,6 +9,28 @@ import Vapor
 import FluentSQLite
 import Crypto
 
+struct InstanceCreateData: Content {
+    var id: UUID?
+    /// The instance name (main, oem, node b, etcetera).
+    var name: String
+    /// The instance version that is running.
+    var version: String
+    /// The track of the instance.
+    var track: String
+    /// The ip of the machine running the instance.
+    var ip: String
+    /// The port on which the instance is exposed.
+    var port: Int
+    /// The full name of the user running the instance.
+    var fullName: String
+    /// The user name of the user running the instance.
+    var userName: String
+    /// The location of the instance.
+    var location: String
+    /// A hash of all the values that make this model unique.
+    var digest: String?
+}
+
 final class Instance: Codable {
     var id: UUID?
     /// The instance name (main, oem, node b, etcetera).
@@ -29,6 +51,8 @@ final class Instance: Codable {
     var location: String
     /// A hash of all the values that make this model unique.
     var digest: String?
+    /// Relationship
+    var userID: User.ID
     
     /// Keep track of timestamps.
     var createdAt: Date?
@@ -47,7 +71,7 @@ final class Instance: Codable {
         return elements.joined(separator: " ")
     }
     
-    init(version: String, name: String, track: String, ip: String, port: Int, fullName: String, userName: String, location: String) {
+    init(version: String, name: String, track: String, ip: String, port: Int, fullName: String, userName: String, location: String, userID: User.ID) {
         self.name = name
         self.version = version
         self.track = track
@@ -56,6 +80,7 @@ final class Instance: Codable {
         self.fullName = fullName
         self.userName = userName
         self.location = location
+        self.userID = userID
     }
 }
 
@@ -76,6 +101,14 @@ extension Instance: Migration {
 extension Instance: Parameter { }
 
 extension Instance: Content { }
+
+// MARK: Relationships
+extension Instance {
+    // Parent relationship
+    var user: Parent<Instance, User> {
+        return parent(\.userID)
+    }
+}
 
 // MARK: Hashing
 extension Instance {

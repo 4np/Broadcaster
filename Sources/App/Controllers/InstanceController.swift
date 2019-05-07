@@ -10,37 +10,50 @@ import Fluent
 
 struct InstanceController: RouteCollection {
     func boot(router: Router) throws {
-        // public routes
+        // Public routes
         let instanceRoutes = router.grouped("api", "instances")
-        instanceRoutes.post(use: createHandler)
-        instanceRoutes.get(use: getAllHandler)
-        instanceRoutes.put(Instance.parameter, "ping", use: pingHandler)
-        instanceRoutes.delete(Instance.parameter, use: deleteHandler)
-        instanceRoutes.get("search", use: searchHandler)
+        
+        // Authenticated routes
+        let tokenAuthMiddleware = User.tokenAuthMiddleware()
+        let guardAuthMiddleware = User.guardAuthMiddleware()
+        let tokenAuthGroup = instanceRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+        tokenAuthGroup.post(InstanceCreateData.self, use: createHandler)
+        tokenAuthGroup.get(use: getAllHandler)
+        tokenAuthGroup.put(Instance.parameter, "ping", use: pingHandler)
+        tokenAuthGroup.delete(Instance.parameter, use: deleteHandler)
+        tokenAuthGroup.get("search", use: searchHandler)
     }
     
     func getAllHandler(_ req: Request) throws -> Future<[Instance]> {
-        let logger = try req.make(Logger.self)
-        
         #if DEBUG
+        let logger = try req.make(Logger.self)
         logger.debug("GET \(req.http.urlString)")
         #endif
         
         return Instance.query(on: req).all()
     }
     
-    func createHandler(_ req: Request) throws -> Future<Instance> {
+    func createHandler(_ req: Request, data: InstanceCreateData) throws -> Future<Instance> {
         let logger = try req.make(Logger.self)
         
         #if DEBUG
         logger.debug("POST \(req.http.urlString)")
         #endif
+
+        let user = try req.requireAuthenticated(User.self)
+        let instance = try Instance(version: data.version,
+                                    name: data.name,
+                                    track: data.track,
+                                    ip: data.ip,
+                                    port: data.port,
+                                    fullName: data.fullName,
+                                    userName: data.userName,
+                                    location: data.location,
+                                    userID: user.requireID())
+        instance.updateDigest()
         
-        return try req.content.decode(Instance.self).flatMap(to: Instance.self) { (instance) in
-            logger.info("Created \(instance.serviceName) instance (\(instance.location))")
-            instance.updateDigest()
-            return instance.save(on: req)
-        }
+        logger.info("Created \(instance.serviceName) instance (\(instance.location))")
+        return instance.save(on: req)
     }
     
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
