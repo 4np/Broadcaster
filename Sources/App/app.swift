@@ -13,27 +13,24 @@ public func app(_ env: Environment) throws -> Application {
     // Get a job connection from the pool
     let jobConnection = try? app.requestPooledConnection(to: .sqlite).wait()
     
-    // The instance lifetime defines the interval since the last updated date when
-    // the instance will be deleted. Keeping the instance alive will update the last
-    // updated date. Defaults to 10 minutes.
-    var instanceLifetime: TimeInterval = 60 * 10
-    if let lifetime = Environment.get("INSTANCE_LIFETIME"), let value = Double(lifetime) {
-        instanceLifetime = value
-    }
-    
     // The job interval describes the frequency the cleanup cycle occurs.
     // Defaults to once every minute.
+    #if DEBUG
+    var jobInterval: TimeInterval = 10
+    #else
     var jobInterval: TimeInterval = 60
+    #endif
     if let interval = Environment.get("CLEANUP_JOB_INTERVAL"), let value = Double(interval) {
         jobInterval = value
     }
     
     if let logger = try? app.make(Logger.self) {
-        logger.info("Instance lifetime: \(instanceLifetime) seconds")
+        logger.info("Instance lifetime: \(Instance.lifetime) seconds")
+        logger.info("Token lifetime: \(Token.lifetime) seconds")
         logger.info("Cleanup job interval: \(jobInterval) seconds")
     }
     
-    // Schedule a cleanup job that runs every minute
+    // Schedule a cleanup job.
     Jobs.add(interval: .seconds(jobInterval)) {
         guard let connection = jobConnection, let logger = try? app.make(Logger.self) else { return }
         
@@ -41,13 +38,18 @@ public func app(_ env: Environment) throws -> Application {
         logger.debug("Running cleanup job")
         #endif
 
-        // Delete expired instances that have not been kept alive.
-        let expiry = Date().addingTimeInterval(-instanceLifetime)
-        let instances = try Instance.query(on: connection).filter(\Instance.fluentUpdatedAt, .lessThanOrEqual, .init(expiry)).all().wait()
-        
+        // Delete expired instances.
+        let instances = try Instance.query(on: connection).filter(\Instance.expiresAt, .lessThanOrEqual, Date()).all().wait()
         for instance in instances {
             _ = instance.delete(on: connection)
-            logger.info("Deleted \(instance.serviceName) expired instance (\(instance.location))")
+            logger.info("Deleted expired instance \(instance.serviceName) (\(instance.location))")
+        }
+        
+        // Delete expired user tokens.
+        let tokens = try Token.query(on: connection).filter(\Token.expiresAt, .lessThanOrEqual, Date()).all().wait()
+        for token in tokens {
+            _ = token.delete(on: connection)
+            logger.info("Deleted expired user token for \(token.userID)")
         }
     }
     

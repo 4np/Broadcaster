@@ -10,19 +10,29 @@ import Vapor
 import FluentSQLite
 import Authentication
 
+/// User model.
 final class User: Codable {
+    /// The unique identifier for this user.
     var id: UUID?
+    /// The user's name.
     var name: String
+    /// The user's username.
     var username: String
+    /// A BCrypt hash of the user's password.
     var password: String
+    /// When the `User` was created.
+    var createdAt: Date?
+    /// When the `User` was last updated.
+    var updatedAt: Date?
     
+    /// Instantiate a new `User`.
     init(name: String, username: String, password: String) {
         self.name = name
         self.username = username
         self.password = password
     }
     
-    // public representation of the User model
+    /// Public representation of the `User` model, that will not reveal the password hash.
     final class Public: Codable {
         var id: UUID?
         var name: String
@@ -36,10 +46,13 @@ final class User: Codable {
     }
 }
 
-extension User: SQLiteUUIDModel { }
+/// Conform to the SQLLite UUID based model.
+extension User: SQLiteUUIDModel {
+    static var createdAtKey: TimestampKey? = \.createdAt
+    static var updatedAtKey: TimestampKey? = \.updatedAt
+}
 
-extension User: Content { }
-
+/// Allows `User` to be used as a Fluent migration.
 extension User: Migration {
     static func prepare(on connection: SQLiteConnection) -> Future<Void> {
         return Database.create(self, on: connection) { (builder) in
@@ -49,23 +62,22 @@ extension User: Migration {
     }
 }
 
-extension User: Parameter { }
-
-extension User.Public: Content { }
-
-// MARK: Child relationship
+/// Child relationship.
 extension User {
-    var acronyms: Children<User, Instance> {
+    /// The user's instances.
+    var instances: Children<User, Instance> {
         return children(\.userID)
     }
 }
 
+/// Convert to a `User.Public` model as not to expose password hashes.
 extension User {
     func convertToPublic() -> User.Public {
         return User.Public(id: id, name: name, username: username)
     }
 }
 
+/// Convert to a Future `User.Public` model as not to expose password hashes.
 extension Future where T: User {
     func convertToPublic() -> Future<User.Public> {
         return self.map(to: User.Public.self) { (user) in
@@ -74,57 +86,22 @@ extension Future where T: User {
     }
 }
 
+/// Allow `User` to authenticate using HTTP Basic authentication.
 extension User: BasicAuthenticatable {
     static var usernameKey: UsernameKey = \.username
     static var passwordKey: PasswordKey = \.password
 }
 
+/// Allow `User` to authenticate using a Token.
 extension User: TokenAuthenticatable {
     typealias TokenType = Token
 }
 
-// MARK: Default Admin User
-struct AdminUser: Migration {
-    typealias Database = SQLiteDatabase
-    
-    static func prepare(on connection: SQLiteConnection) -> EventLoopFuture<Void> {
-        // Get the admin credentials from the environment, if possible.
-        let name = Environment.get("ADMIN_USER") ?? "Admin"
-        let username = Environment.get("ADMIN_USER_USERNAME") ?? "admin"
-        let password = Environment.get("ADMIN_USER_PASSWORD") ?? "admin"
-        
-        guard let hashedPassword = try? BCrypt.hash(password) else {
-            fatalError("Failed to create admin user")
-        }
-        
-        let user = User(name: name, username: username, password: hashedPassword)
-        return user.save(on: connection).transform(to: ())
-    }
-    
-    static func revert(on connection: SQLiteConnection) -> EventLoopFuture<Void> {
-        return .done(on: connection)
-    }
-}
+/// Allow `User` to be encoded to and decoded from HTTP messages.
+extension User: Content { }
 
-// MARK: Default User
-struct DefaultUser: Migration {
-    typealias Database = SQLiteDatabase
-    
-    static func prepare(on connection: SQLiteConnection) -> EventLoopFuture<Void> {
-        // Get the admin credentials from the environment, if possible.
-        let name = Environment.get("DEFAULT_USER") ?? "Default user"
-        let username = Environment.get("DEFAULT_USER_USERNAME") ?? "user"
-        let password = Environment.get("DEFAULT_USER_PASSWORD") ?? "user"
-        
-        guard let hashedPassword = try? BCrypt.hash(password) else {
-            fatalError("Failed to create default user")
-        }
-        
-        let user = User(name: name, username: username, password: hashedPassword)
-        return user.save(on: connection).transform(to: ())
-    }
-    
-    static func revert(on connection: SQLiteConnection) -> EventLoopFuture<Void> {
-        return .done(on: connection)
-    }
-}
+/// Allow `User.Public` to be encoded to and decoded from HTTP messages.
+extension User.Public: Content { }
+
+/// Allow `User` to be used as a request parameter.
+extension User: Parameter { }

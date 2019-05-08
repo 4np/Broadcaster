@@ -84,6 +84,7 @@ struct InstanceController: RouteCollection {
             .parameters.next(Instance.self)
             .map(to: Instance.self) { (instance) in
                 logger.info("Keeping \(instance.serviceName) instance alive (\(instance.location))")
+                instance.updateExpiry()
                 return instance
             }
             .update(on: req)

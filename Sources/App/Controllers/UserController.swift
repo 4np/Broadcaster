@@ -14,19 +14,18 @@ struct UsersController: RouteCollection {
         // public routes
         let userRoutes = router.grouped("api", "users")
         //userRoutes.post(User.self, use: createHandler)
-        //userRoutes.get(use: getAllHandler)
         //userRoutes.get(User.parameter, use: getHandler)
         
-        // authenticated routes
+        // Routes that allow HTTP Basic authentication.
         let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
         let basicAuthGroup = userRoutes.grouped(basicAuthMiddleware)
         basicAuthGroup.post("login", use: loginHandler)
         
-        // authenticated routes
+        // Routes that allow Bearer Token based authentication.
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         let guardAuthMiddleware = User.guardAuthMiddleware()
         let tokenAuthGroup = userRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
-        tokenAuthGroup.post(User.self, use: createHandler)
+        tokenAuthGroup.get(use: getAllHandler)
     }
     
     func createHandler(_ req: Request, user: User) throws -> Future<User.Public> {

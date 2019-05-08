@@ -11,7 +11,7 @@ public func routes(_ router: Router) throws {
     }
     
     // Ping
-    router.get("ping") { req in
+    router.get("/api/ping") { req in
         return "pong" as StaticString
     }
     

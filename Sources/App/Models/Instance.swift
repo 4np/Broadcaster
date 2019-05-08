@@ -32,6 +32,13 @@ struct InstanceCreateData: Content {
 }
 
 final class Instance: Codable {
+    /// The lifetime of an instance since last update, before it gets deleted.
+    #if DEBUG
+    public static let lifetime: TimeInterval = 60
+    #else
+    public static let lifetime: TimeInterval = (Environment.get("INSTANCE_LIFETIME") != nil) ? Double(Environment.get("INSTANCE_LIFETIME")!)! : 60 * 10
+    #endif
+    /// The unique identifier for this `Instance`.
     var id: UUID?
     /// The instance name (main, oem, node b, etcetera).
     var name: String
@@ -53,10 +60,12 @@ final class Instance: Codable {
     var digest: String?
     /// Relationship
     var userID: User.ID
-    
-    /// Keep track of timestamps.
+    /// When the `Instance` was created.
     var createdAt: Date?
+    /// When the `Instance` was last updated.
     var updatedAt: Date?
+    /// When the `Instance` will expire.
+    var expiresAt: Date?
     
     /// Create a service name for logging purposes.
     var serviceName: String {
@@ -81,14 +90,17 @@ final class Instance: Codable {
         self.userName = userName
         self.location = location
         self.userID = userID
+        updateExpiry()
     }
 }
 
+/// Conform to the SQLLite UUID based model.
 extension Instance: SQLiteUUIDModel {
     static var createdAtKey: TimestampKey? = \.createdAt
     static var updatedAtKey: TimestampKey? = \.updatedAt
 }
 
+/// Allows `Instance` to be used as a Fluent migration.
 extension Instance: Migration {
     static func prepare(on connection: SQLiteConnection) -> Future<Void> {
         return Database.create(self, on: connection) { (builder) in
@@ -98,11 +110,13 @@ extension Instance: Migration {
     }
 }
 
+/// Allow `Instance` to be used as a request parameter.
 extension Instance: Parameter { }
 
+/// Allow `Instance` to be encoded to and decoded from HTTP messages.
 extension Instance: Content { }
 
-// MARK: Relationships
+/// elationships.
 extension Instance {
     // Parent relationship
     var user: Parent<Instance, User> {
@@ -110,7 +124,7 @@ extension Instance {
     }
 }
 
-// MARK: Hashing
+// Hashing.
 extension Instance {
     func updateDigest() {
         guard digest == nil else { return }
@@ -121,5 +135,13 @@ extension Instance {
         if let digest = try? SHA1.hash(name + version + track + String(port) + userName + location) {
             self.digest = digest.hexEncodedString()
         }
+    }
+}
+
+/// Keeping the instance alive.
+extension Instance {
+    /// Update the instance expiry, so it not will be deleted in the clean-up cycle.
+    func updateExpiry() {
+        expiresAt = Date.init(timeInterval: Instance.lifetime, since: .init())
     }
 }
