@@ -2,6 +2,8 @@
 
 Broadcaster is a REST API developed in [Vapor](https://vapor.codes), backed by an in-memory SQLite database.
 
+![Made with Vapor and Swift](https://github.com/4np/Broadcaster/blob/master/Public/vapor-and-swift-banner.png?raw=true)
+
 ## API Endpoints
 
 ### GET /api/ping
