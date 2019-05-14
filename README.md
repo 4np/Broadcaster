@@ -205,7 +205,7 @@ stdout_logfile=/var/log/supervisor/%(program_name)-stdout.log
 stderr_logfile=/var/log/supervisor/%(program_name)-stderr.log
 ```
 
-_Note: this assumes you have created a `vapor` user, and you have checked out the repository at `/path/to/Broadcaster`. Also make sure to update the environment variables that are used to update the scheduled jobs and seed the default users with._
+_Note: this assumes you have created a `vapor` user, and you have checked out the repository at `/home/vapor/Broadcaster`. Also make sure to update the environment variables that are used to update the scheduled jobs and seed the default users with._
 
 In order to run, you need to clone the repo to `/home/vapor/Broadcaster`:
 
@@ -215,7 +215,8 @@ git clone https://github.com/4np/Broadcaster.git
 cd Broadcaster
 ./build-release.sh
 ```
-_Note: this assumes you installed [Swift](https://tecadmin.net/install-swift-ubuntu-1804-bionic/) on your Linux box._
+
+_Note: this assumes you [installed Swift and Vapor](https://repo.vapor.codes) on your Ubuntu box._
 
 Then (re)start supervisor:
 
