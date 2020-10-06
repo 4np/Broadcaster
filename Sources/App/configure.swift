@@ -1,43 +1,43 @@
 import Vapor
-import FluentSQLite
-import Authentication
 import Leaf
+import Fluent
+import FluentSQLiteDriver
 
-/// Called before your application initializes.
-public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
-    // Register providers first
-    try services.register(FluentSQLiteProvider())
-    try services.register(AuthenticationProvider())
-    try services.register(LeafProvider())
-    
-    // Register routes to the router
-    let router = EngineRouter.default()
-    try routes(router)
-    services.register(router, as: Router.self)
+// see: https://www.vknabel.com/pages/Upgrading-a-server-side-Swift-project-to-Vapor-4/
+// see: https://docs.vapor.codes/4.0/fluent/migration/
 
-    // Register middleware
-    var middlewares = MiddlewareConfig() // Create _empty_ middleware config
-    // middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory
-    middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
-    services.register(middlewares)
-
-    // Configure a SQLite database
-    let sqlite = try SQLiteDatabase(storage: .memory)
-
-    // Register the configured SQLite database to the database config.
-    var databases = DatabasesConfig()
-    databases.add(database: sqlite, as: .sqlite)
-    services.register(databases)
-
-    // Configure migrations
-    var migrations = MigrationConfig()
-    migrations.add(model: User.self, database: .sqlite)
-    migrations.add(model: Instance.self, database: .sqlite)
-    migrations.add(model: Token.self, database: .sqlite)
-    migrations.add(migration: AdminUser.self, database: .sqlite)
-    migrations.add(migration: DefaultUser.self, database: .sqlite)
-    services.register(migrations)
+// configures your application
+public func configure(_ app: Application) throws {
+    // uncomment to serve files from /Public folder
+    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     
     // Leaf
-    config.prefer(LeafRenderer.self, for: ViewRenderer.self)
+    app.views.use(.leaf)
+    app.leaf.configuration.rootDirectory = templateFolder
+    app.leaf.sources = .singleSource(NIOLeafFiles(fileio: app.fileio,
+                                                  limits: .default,
+                                                  sandboxDirectory: projectFolder,
+                                                  viewDirectory: templateFolder))
+    app.leaf.cache.isEnabled = false
+    
+    // database configuration
+    app.databases.use(.sqlite(.memory), as: .sqlite)
+    
+    // database migrations
+    app.migrations.add(UserCreation())
+    app.migrations.add(InstanceCreation())
+    // set auto migrations (for in-memory sqlite)
+    try app.autoMigrate().wait()
+
+    // register routes
+    try routes(app)
+}
+
+fileprivate var templateFolder: String {
+    return projectFolder + "Views/"
+}
+
+fileprivate var projectFolder: String {
+    let folder = #file.split(separator: "/").dropLast(3).joined(separator: "/")
+    return "/" + folder + "/"
 }
