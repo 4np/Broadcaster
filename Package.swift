@@ -7,6 +7,7 @@ let package = Package(
        .macOS(.v10_15)
     ],
     dependencies: [
+        .package(url: "https://github.com/apple/swift-algorithms.git", from: "0.0.1"),
         .package(url: "https://github.com/swift-server/swift-backtrace.git", from: "1.2.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0-rc.1.4"),
         .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
@@ -17,11 +18,11 @@ let package = Package(
         .target(
             name: "App",
             dependencies: [
+                .product(name: "Algorithms", package: "swift-algorithms"),
                 .product(name: "Backtrace", package: "swift-backtrace"),
                 .product(name: "Leaf", package: "leaf"),
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),
-                
                 .product(name: "Vapor", package: "vapor")
             ],
             swiftSettings: [
